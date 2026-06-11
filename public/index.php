@@ -4,9 +4,9 @@ require_once __DIR__ . '/../config/database.php';
 
 $message = "";
 
-// Check if form is clicked or submitted
+// Check if a form button was clicked
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Defensive Input Sanitization (Protects against basic scripting hacks)
+    // Input Sanitization (Defensive Security) [cite: 28]
     $soldier_id = htmlspecialchars(strip_tags(trim($_POST['soldier_id'])), ENT_QUOTES, 'UTF-8');
     
     if (isset($_POST['register_family'])) {
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $division = htmlspecialchars($_POST['division'], ENT_QUOTES, 'UTF-8');
         $contact = htmlspecialchars($_POST['contact'], ENT_QUOTES, 'UTF-8');
 
-        // Secure Prepared Statement insertion
+        // Insert into PostgreSQL securely [cite: 27]
         $stmt = $pdo->prepare("INSERT INTO beneficiaries (soldier_id, rank, division, contact_number) VALUES (?, ?, ?, ?)");
         $stmt->execute([$soldier_id, $rank, $division, $contact]);
         $message = "✅ Soldier Family Unit Registered Safely!";
@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $aid_type = htmlspecialchars($_POST['aid_type'], ENT_QUOTES, 'UTF-8');
         $amount = floatval($_POST['amount']);
 
+        // Insert into PostgreSQL securely [cite: 27]
         $stmt = $pdo->prepare("INSERT INTO disbursements (soldier_id, aid_type, amount) VALUES (?, ?, ?)");
         $stmt->execute([$soldier_id, $aid_type, $amount]);
         $message = "✅ Aid Record Disbursed Successfully!";
@@ -45,7 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="dashboard.php" style="color: yellow; text-decoration: none; font-weight: bold;">➡️ Go to Visual Analytics Dashboard</a>
         </header>
 
-        <?php if($message): ?> <div class="card" style="color: green; font-weight: bold;"><?= $message ?></div> <?php endif; ?>
+        <?php if($message): ?> 
+            <div class="card" style="color: green; font-weight: bold; background-color: #e8f5e9; border: 1px solid green; padding: 10px; border-radius: 4px;"><?= $message ?></div> 
+        <?php endif; ?>
 
         <div class="card">
             <h2>1. Register New Dependent Family</h2>
