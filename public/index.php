@@ -1,36 +1,76 @@
 <?php
 // public/index.php
-session_start();
 require_once __DIR__ . '/../config/database.php';
 
-// Grab the web address path the user is trying to look at
-$request = $_SERVER['REQUEST_URI'];
+$message = "";
 
-// Clean up any trailing slashes or extra text at the end of the URL
-$path = parse_url($request, PHP_URL_PATH);
+// Check if form is clicked or submitted
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Defensive Input Sanitization (Protects against basic scripting hacks)
+    $soldier_id = htmlspecialchars(strip_tags(trim($_POST['soldier_id'])), ENT_QUOTES, 'UTF-8');
+    
+    if (isset($_POST['register_family'])) {
+        $rank = htmlspecialchars($_POST['rank'], ENT_QUOTES, 'UTF-8');
+        $division = htmlspecialchars($_POST['division'], ENT_QUOTES, 'UTF-8');
+        $contact = htmlspecialchars($_POST['contact'], ENT_QUOTES, 'UTF-8');
 
-// The Router Switcher: Tells the server exactly which file to open
-switch ($path) {
-    // FIX: If they visit the main website address (e.g., updf-welfare.onrender.com/)
-    case '/':
-    case '/index.php':
-        // Show the registration forms page directly
-        require_once __DIR__ . '/index.php'; 
-        break;
+        // Secure Prepared Statement insertion
+        $stmt = $pdo->prepare("INSERT INTO beneficiaries (soldier_id, rank, division, contact_number) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$soldier_id, $rank, $division, $contact]);
+        $message = "✅ Soldier Family Unit Registered Safely!";
+    } 
+    
+    elseif (isset($_POST['allocate_aid'])) {
+        $aid_type = htmlspecialchars($_POST['aid_type'], ENT_QUOTES, 'UTF-8');
+        $amount = floatval($_POST['amount']);
 
-    case '/dashboard':
-    case '/dashboard.php':
-        require_once __DIR__ . '/dashboard.php';
-        break;
-
-    case '/get-data.php':
-    case '/api/analytics-data':
-        require_once __DIR__ . '/get-data.php';
-        break;
-
-    default:
-        // If they type a broken web link that doesn't exist
-        http_response_code(404);
-        echo "404 - Page Not Found. Please return to the home page.";
-        break;
+        $stmt = $pdo->prepare("INSERT INTO disbursements (soldier_id, aid_type, amount) VALUES (?, ?, ?)");
+        $stmt->execute([$soldier_id, $aid_type, $amount]);
+        $message = "✅ Aid Record Disbursed Successfully!";
+    }
 }
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UPDF Welfare Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>UPDF Family Welfare & Aid Registry</h1>
+            <p>Official Intake & Allocation Management Dashboard</p>
+            <a href="dashboard.php" style="color: yellow; text-decoration: none; font-weight: bold;">➡️ Go to Visual Analytics Dashboard</a>
+        </header>
+
+        <?php if($message): ?> <div class="card" style="color: green; font-weight: bold;"><?= $message ?></div> <?php endif; ?>
+
+        <div class="card">
+            <h2>1. Register New Dependent Family</h2>
+            <form action="index.php" method="POST">
+                <input type="text" name="soldier_id" placeholder="Soldier ID Number (e.g. UPDF-INF-102)" required>
+                <input type="text" name="rank" placeholder="Soldier Rank (e.g. Captain)" required>
+                <input type="text" name="division" placeholder="Military Division Assignment" required>
+                <input type="text" name="contact" placeholder="Next of Kin Primary Mobile Contact" required>
+                <button type="submit" name="register_family">Secure Register Record</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>2. Distribute Aid Support Ledger</h2>
+            <form action="index.php" method="POST">
+                <input type="text" name="soldier_id" placeholder="Target Soldier ID Number" required>
+                <select name="aid_type">
+                    <option value="School Bursary">School Bursary</option>
+                    <option value="Medical Support">Medical Support</option>
+                    <option value="Financial Relief">Financial Relief</option>
+                </select>
+                <input type="number" name="amount" placeholder="Amount allocated (UGX)" required>
+                <button type="submit" name="allocate_aid">Log Disbursement</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
